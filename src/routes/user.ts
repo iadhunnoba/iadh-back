@@ -18,12 +18,12 @@ router.get('/', [checkJwt, checkRole(['admin'])], UserController.getAll);
 router.get('/:id', [checkJwt, checkRole(['admin'])], UserController.getById);
 
 // Create new user
-router.post('/', [checkJwt, checkRole(['admin'])], UserController.newUser);
+router.post('/', [checkJwt, checkRole(['admin'])], UserController.new);
 
 // Edit user or update user
-router.patch('/:id', [checkJwt, checkRole(['admin'])], UserController.editUser);
+router.patch('/:id', [checkJwt, checkRole(['admin'])], UserController.edit);
 
 // Delete user
-router.delete('/:id', [checkJwt, checkRole(['admin'])], UserController.deleteUser);
+router.delete('/:id', [checkJwt, checkRole(['admin'])], UserController.delete);
 
 export default router;
