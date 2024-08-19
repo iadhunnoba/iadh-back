@@ -1,18 +1,21 @@
-import "reflect-metadata"
-import { DataSource } from "typeorm"
-import { User } from "./entity/User"
-import { DataMqtt } from "./entity/DataMqtt"
+import "reflect-metadata";
+import { DataSource } from "typeorm";
+import { User } from "./entity/User";
+import { Sesion } from "./entity/Sesion";
 
 export const AppDataSource = new DataSource({
-    type: "mysql",
-    host: "localhost",
-    port: 3306,
-    username: "root",
-    password: "",
-    database: "login_node",
-    synchronize: true,
-    logging: false,
-    entities: [User, DataMqtt],
-    migrations: [],
-    subscribers: [],
-})
+  type: "mysql",
+  host: "localhost",
+  port: 3306,
+  username: "root",
+  password: "Elias985420us",
+  database: "api_rcp",
+  synchronize: true,
+  logging: false,
+  entities: [User, Sesion],
+  migrations: [],
+  subscribers: [],
+  extra: {
+    authPlugin: "mysql_native_password",
+  },
+});

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Nuevo changeSet para insertar un usuario -->
+    <changeSet id="3" author="Elias">
+        <insert tableName="user">
+            <column name="username" value="Elias"/>
+            <column name="password" value="12345678"/>
+            <column name="role" value="admin"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>
