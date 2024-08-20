@@ -39,8 +39,9 @@ export class SesionController {
     const { fechaInicio, fechaFin } = req.body;
     const sesion = new Sesion();
 
-    sesion.fechaInicio = fechaInicio;
-    sesion.fechaFin = fechaFin;
+    // Convertir a instancias de Date
+    sesion.fechaInicio = new Date(fechaInicio);
+    sesion.fechaFin = fechaFin ? new Date(fechaFin) : undefined;
 
     // Opciones de validación
     const validationOpt = { validationError: { target: false, value: false } };
@@ -57,7 +58,7 @@ export class SesionController {
       return res.status(409).json({ message: "Sesion creation failed" });
     }
 
-    res.send("Sesion created");
+    return res.status(201).json({ message: "Sesion created successfully" });
   };
 
   static edit = async (req: Request, res: Response) => {

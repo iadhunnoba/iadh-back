@@ -8,8 +8,9 @@
     <!-- Nuevo changeSet para insertar un usuario -->
     <changeSet id="3" author="Elias">
         <insert tableName="user">
-            <column name="username" value="Elias"/>
-            <column name="password" value="12345678"/>
+            <column name="username" value="elias"/>
+            <column name="password" value="$2a$10$3vQCFsybDNWf/9vQNwfheuUNGvlEzgFuK91gbvlbjlWM0CtRkS25C"/>
+            <!--  password: 12345678 -->
             <column name="role" value="admin"/>
         </insert>
     </changeSet>

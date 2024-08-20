@@ -12,12 +12,12 @@ export class Sesion {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ type: "timestamp" })
   @IsNotEmpty()
   @IsDate()
   fechaInicio: Date;
 
-  @Column({ nullable: true }) // Permite que la fecha de finalización sea opcional al principio
+  @Column({ type: "timestamp", nullable: true }) // Permite que la fecha de finalización sea opcional al principio
   @IsDate()
   fechaFin?: Date;
 
