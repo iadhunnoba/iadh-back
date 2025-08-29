@@ -20,9 +20,12 @@ export class User {
     @IsNotEmpty()
     password: string
 
-    @Column()
+    @Column({
+    type: "enum",
+    enum: ["admin", "user"], // Definimos roles posibles 
+    default: "user"})
     @IsNotEmpty()
-    role: string
+    role: string; 
 
     @Column()
     @CreateDateColumn()

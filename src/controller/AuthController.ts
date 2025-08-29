@@ -43,7 +43,7 @@ class AuthController {
         const { oldPassword, newPassword } = req.body;
 
         if (!(oldPassword && newPassword)) {
-            res.status(400).json({ message: 'Old password & new password are required' });
+            return res.status(400).json({ message: 'Old password & new password are required' });
         }
 
         const userRepository = AppDataSource.getRepository(User);
@@ -53,11 +53,11 @@ class AuthController {
         try {
             user = await userRepository.findOneOrFail({ where: { id } });
         } catch (error) {
-            res.status(400).json({ message: 'Somenthing goes wrong!' });
+            return res.status(400).json({ message: 'Somenthing goes wrong!' });
         }
 
         if (!user.checkPassword(oldPassword)) {
-            res.status(401).json({ message: 'Check your old Password' });
+            return res.status(401).json({ message: 'Check your old Password' });
         }
 
         user.password = newPassword;

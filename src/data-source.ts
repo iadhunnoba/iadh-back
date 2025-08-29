@@ -7,7 +7,7 @@ export const AppDataSource = new DataSource({
     host: "localhost",
     port: 3306,
     username: "root",
-    password: "",
+    password: "33florencia",
     database: "login_node",
     synchronize: true,
     logging: false,
@@ -15,3 +15,4 @@ export const AppDataSource = new DataSource({
     migrations: [],
     subscribers: [],
 })
+

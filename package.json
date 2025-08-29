@@ -20,7 +20,7 @@
       "express": "^4.17.2",
       "helmet": "^7.0.0",
       "jsonwebtoken": "^9.0.1",
-      "mysql": "^2.14.1",
+      "mysql2": "^3.14.3",
       "reflect-metadata": "^0.1.13",
       "typeorm": "0.3.17"
    },
