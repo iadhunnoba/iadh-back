@@ -14,6 +14,9 @@ const router = Router();
 // Get all users
 router.get('/', [checkJwt, checkRole(['admin'])], UserController.getAll);
 
+// Get students
+router.get('/students', [checkJwt, checkRole(['admin'])], UserController.getStudents);
+
 // Get one user
 router.get('/:id', [checkJwt, checkRole(['admin'])], UserController.getById);
 

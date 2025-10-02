@@ -16,14 +16,35 @@ export class User {
     username: string
 
     @Column()
+    @IsNotEmpty()
+    name: string
+
+    @Column()
+    @IsNotEmpty()
+    surname: string
+
+    @Column()           // Matricula profesional
+    license: string
+
+    @Column()           // Legajo estudiantil
+    studentIdNumber: string 
+
+    @Column()           // Materia del estudiante
+    subject: string
+
+    @Column()           // Comisión del estudiante
+    section: string
+
+    @Column({ select: false })  // Excluye el campo password en las consultas por defecto
     @MinLength(6)
     @IsNotEmpty()
     password: string
 
     @Column({
-    type: "enum",
-    enum: ["admin", "user"], // Definimos roles posibles 
-    default: "user"})
+        type: "enum",
+        enum: ["admin", "user"],
+        default: "user"
+    })
     @IsNotEmpty()
     role: string; 
 
@@ -35,13 +56,11 @@ export class User {
     @UpdateDateColumn()
     updatedAt: Date;
 
-    // A la hora de crear el usuario se encriptara la password, este metodo se encarga de encriptar
     hashPassword(): void {
         const salt = bcrypt.genSaltSync(10);
         this.password = bcrypt.hashSync(this.password, salt)
     }
 
-    // A la hora de loguearse se comparara la password ingresada con la password de la base de datos
     checkPassword(password: string): boolean {
         return bcrypt.compareSync(password, this.password)
     }

@@ -1,27 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-
 import * as jwt from "jsonwebtoken";
-import config from "../config/config"
+import config from "../config/config";
 
 export const checkJwt = (req: Request, res: Response, next: NextFunction) => {
-    //console.log('Req--', req.headers)
-    const token = <string>req.headers['auth'];
+    // Obtener el token del header Authorization
+    const authHeader = req.headers['authorization'];
+    
+    if (!authHeader) {
+        return res.status(401).json({ message: 'No token provided' });
+    }
+
+    // Extraer el token (formato: "Bearer TOKEN")
+    const token = authHeader.startsWith('Bearer ') 
+        ? authHeader.slice(7) 
+        : authHeader;
 
     let jwtPayload;
 
     try {
-        jwtPayload = <any>jwt.verify(token, config.jwtSecret);
+        jwtPayload = jwt.verify(token, config.jwtSecret);
         res.locals.jwtPayload = jwtPayload;
     } catch (error) {
-        return res.status(401).json({ message: 'Not Authorized' });
+        return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
     const { userId, username } = jwtPayload;
 
-    // Creo el token
+    // Crear nuevo token
     const newToken = jwt.sign({ userId, username }, config.jwtSecret, { expiresIn: '1h' });
     res.setHeader('token', newToken);
 
-    // Call next
+    // Llamar al siguiente middleware
     next();
 }
