@@ -1,50 +1,50 @@
-import * as express from "express"
-import { Request, Response } from "express"
-import { AppDataSource } from "./data-source"
-
-import * as cors from "cors"
-import helmet from "helmet"
-import routes from "./routes"
+import * as express from "express";
+import { Request, Response } from "express";
+import { AppDataSource } from "./data-source";
+import * as cors from "cors";
+import helmet from "helmet";
+import routes from "./routes";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const PORT = process.env.PORT || 3000;
+const execAsync = promisify(exec);
 
-AppDataSource.initialize().then(async () => {
+async function runLiquibase() {
+  try {
+    await execAsync("liquibase --defaultsFile=liquibase.properties update");
+    console.log("Liquibase updates applied successfully.");
+  } catch (error) {
+    console.error("Error applying Liquibase updates:", error);
+    throw error; // Propagar el error para que el inicio de la API falle
+  }
+}
 
-    // create express app
-    const app = express()
+async function startApp() {
+  try {
+    // Ejecutar Liquibase antes de inicializar la base de datos
+    await runLiquibase();
 
-    // Middlewares 
+    // Inicializar la conexión de TypeORM
+    await AppDataSource.initialize();
+    console.log("Database connected.");
+
+    // Crear la aplicación Express
+    const app = express();
+
+    // Middlewares
     app.use(cors());
     app.use(helmet());
+    app.use(express.json());
 
-    app.use(express.json())
+    // Rutas
+    app.use("/", routes);
 
-    // Routes
-    app.use('/', routes);
-
-    // start express server
+    // Iniciar el servidor Express
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (error) {
+    console.error("Error starting the application:", error);
+  }
+}
 
-    // insert new users for test
-    /* await AppDataSource.manager.save(
-        AppDataSource.manager.create(User, {
-            firstName: "Timber",
-            lastName: "Saw",
-            age: 27
-        })
-    )
-
-    await AppDataSource.manager.save(
-        AppDataSource.manager.create(User, {
-            firstName: "Phantom",
-            lastName: "Assassin",
-            age: 24
-        })
-    )
-
-    console.log("Express server has started on port 3000. Open http://localhost:3000/users to see results") */
-
-}).catch(error => console.log(error))
-
-
-
+startApp();

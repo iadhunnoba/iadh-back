@@ -1,15 +1,18 @@
 // Importo desde express Router
-import { Router } from 'express';
+import { Router } from "express";
 
 // Importo los modulos que necesito
-import auth from './auth';
-import user from './user';
+import auth from "./auth";
+import user from "./user";
+import sesion from "./sesion";
 
 const routes = Router();
 
-routes.use('/auth', auth);
+routes.use("/auth", auth);
 
-routes.use('/users', user);
+routes.use("/users", user);
+
+routes.use("/sesion", sesion);
 
 // Para que el usuario puede loguearse debera acceder al host
 // localhost:3000/auth/login
