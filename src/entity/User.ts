@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Unique, CreateDateColumn, UpdateDateColumn } from "typeorm"
 import { MinLength, IsNotEmpty, IsEmail } from "class-validator"
 import * as bcrypt from "bcryptjs"
+import { IsOptional } from "class-validator"
 
 @Entity()
 @Unique(['username'])
@@ -23,16 +24,20 @@ export class User {
     @IsNotEmpty()
     surname: string
 
-    @Column()           // Matricula profesional
+    @Column({ nullable: true })
+    @IsOptional()         // Matricula profesional
     license: string
 
-    @Column()           // Legajo estudiantil
+    @Column({ nullable: true })           // Legajo estudiantil
+    @IsOptional()
     studentIdNumber: string 
 
-    @Column()           // Materia del estudiante
+    @Column({ nullable: true })           // Materia del estudiante
+    @IsOptional()
     subject: string
 
-    @Column()           // Comisión del estudiante
+    @Column({ nullable: true })           // Comisión del estudiante
+    @IsOptional()
     section: string
 
     @Column({ select: false })  // Excluye el campo password en las consultas por defecto

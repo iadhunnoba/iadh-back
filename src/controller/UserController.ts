@@ -2,6 +2,7 @@ import { AppDataSource } from "../data-source"
 import { Request, Response } from "express"
 import { User } from "../entity/User"
 import { validate } from "class-validator"
+import e = require("express")
 
 export class UserController {
     static getAll = async (req: Request, res: Response) => {
@@ -127,16 +128,18 @@ export class UserController {
     }
 
     static new = async (req: Request, res: Response) => {
-        const { username, password, role, name, surname, license, studentIdNumber } = req.body;
+        const { username, password, role, name, surname, license, studentIdNumber, subject, section } = req.body;
         const user = new User();
 
         user.username = username;
         user.password = password;
-        user.role = role;
+        user.role = role || 'user';
         user.name = name;
         user.surname = surname;
-        user.license = license || '';
-        user.studentIdNumber = studentIdNumber || '';
+        user.license = license || null;
+        user.studentIdNumber = studentIdNumber || null;
+        user.subject = subject || null;
+        user.section = section || null;
 
         const validationOpt = { validationError: { target: false, value: false } };
         const errors = await validate(user, validationOpt);
@@ -149,11 +152,17 @@ export class UserController {
         try {
             user.hashPassword();
             await userRepository.save(user);
+            
+            // Devolver el usuario creado sin la contraseña
+            const { password: _, ...userWithoutPassword } = user;
+            return res.status(201).json({ 
+                message: 'User created successfully',
+                user: userWithoutPassword 
+            });
         } catch (error) {
-            return res.status(409).json({ message: 'Error create user' })
+            console.error('Error creating user:', error);
+            return res.status(409).json({ message: 'Error create user. Username might already exist.', error });
         }
-
-        res.send('User created')
     }
 
     static edit = async (req: Request, res: Response) => {
@@ -203,10 +212,13 @@ export class UserController {
         } catch (error) {
             return res.status(404).json({ message: 'User not found' });
         }
-
-        userRepository.delete(id);
+        try {
+        await userRepository.delete(id);
         res.status(201).json({ message: 'User deleted' });
+    }catch (error) {
+        return res.status(500).json({ message: 'Error deleting user, the user may have a CPR session.' });
     }
+}
 }
 
 export default UserController;
