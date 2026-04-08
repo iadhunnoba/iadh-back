@@ -3,14 +3,16 @@ import * as jwt from "jsonwebtoken";
 import config from "../config/config";
 
 export const checkJwt = (req: Request, res: Response, next: NextFunction) => {
-    // Obtener el token del header Authorization
-    const authHeader = req.headers['authorization'];
+    // Obtener el token de los headers 'auth' o 'authorization'
+    const tokenHeader = req.headers['auth'] || req.headers['authorization'];
     
-    if (!authHeader) {
+    if (!tokenHeader) {
         return res.status(401).json({ message: 'No token provided' });
     }
 
-    // Extraer el token (formato: "Bearer TOKEN")
+    const authHeader = tokenHeader as string;
+
+    // Extraer el token (formato: "Bearer TOKEN" o TOKEN directamente)
     const token = authHeader.startsWith('Bearer ') 
         ? authHeader.slice(7) 
         : authHeader;

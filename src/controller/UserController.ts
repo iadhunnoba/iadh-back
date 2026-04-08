@@ -212,13 +212,14 @@ export class UserController {
         } catch (error) {
             return res.status(404).json({ message: 'User not found' });
         }
+        
         try {
-        await userRepository.delete(id);
-        res.status(201).json({ message: 'User deleted' });
-    }catch (error) {
-        return res.status(500).json({ message: 'Error deleting user, the user may have a CPR session.' });
+            await userRepository.delete(id);
+            res.status(201).json({ message: 'User deleted' });
+        } catch (error) {
+            return res.status(500).json({ message: 'Error deleting user, the user may have a CPR session.' });
+        }
     }
-}
 }
 
 export default UserController;

@@ -14,7 +14,11 @@ AppDataSource.initialize().then(async () => {
     const app = express()
 
     // Middlewares 
-    app.use(cors());
+    app.use(cors({
+        origin: "*",
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "auth", "Authorization"]
+    }));
     app.use(helmet());
 
     app.use(express.json())
