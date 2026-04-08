@@ -61,7 +61,7 @@ Gestión de acceso y seguridad mediante JWT.
 - **`POST /auth/change-password`**: Permite a un usuario autenticado cambiar su propia contraseña. Requiere token JWT válido.
 
 ### 2. Gestión de Usuarios (`/users`)
-Control total sobre las cuentas de usuario (Solo para el rol `admin`).
+Control total sobre las cuentas de usuario (Accesible para roles `admin` y `profesor`).
 - **`GET /users`**: Obtiene una lista de todos los usuarios registrados.
 - **`GET /users/students`**: Filtra y devuelve solo los usuarios con rol de estudiante.
 - **`GET /users/:id`**: Obtiene los detalles de un usuario específico por su ID.
@@ -70,9 +70,9 @@ Control total sobre las cuentas de usuario (Solo para el rol `admin`).
 - **`DELETE /users/:id`**: Elimina un usuario del sistema.
 
 ### 3. Sesiones de RCP (`/students/:id/rcp-sessions`)
-Seguimiento de prácticas de RCP realizadas por los estudiantes. Accesible para `admin` y `user`.
+Seguimiento de prácticas de RCP realizadas por los estudiantes. Accesible para `admin`, `profesor` y `estudiante`.
 - **`POST /students/:id/rcp-sessions/start`**: Registra el inicio de una sesión de RCP para un estudiante.
-- **`POST /students/:id/rcp-sessions/:sessionId/end`**: Finaliza una sesión de RCP, calculando la duración automáticamente.
+- **`POST /students/:id/rcp-sessions/:sessionId/end`**: Finaliza una sesión de RCP, calculando la duración automáticamente y guardando los promedios de la maniobra.
 - **`GET /students/:id/rcp-sessions`**: Recupera el historial de sesiones de RCP asociadas a un estudiante específico.
 
 ## Modelos de Datos (Entidades)
@@ -83,7 +83,7 @@ Seguimiento de prácticas de RCP realizadas por los estudiantes. Accesible para 
 - `name` / `surname`: Nombre y apellido.
 - `license`: Matrícula profesional (opcional).
 - `studentIdNumber`: Legajo estudiantil (opcional).
-- `role`: "admin" o "user".
+- `role`: "admin", "profesor" o "estudiante".
 - `password`: Almacenada de forma segura mediante hash.
 
 ### RcpSession (Sesión de RCP)
@@ -92,7 +92,10 @@ Seguimiento de prácticas de RCP realizadas por los estudiantes. Accesible para 
 - `startedAt`: Fecha y hora de inicio.
 - `endedAt`: Fecha y hora de fin.
 - `duration`: Tiempo transcurrido en segundos.
-- `observation`: Notas o comentarios adicionales sobre la sesión.
+- `avgPulmonaryPressure`: Presión pulmonar promedio durante la sesión.
+- `avgVentilation`: Ventilación promedio durante la sesión.
+- `avgCorrectPosition`: Porcentaje de posición correcta de la maniobra promedio.
+- `observation`: Notas o comentarios adicionales del profesor sobre la sesión.
 
 ---
 *Documentación generada el 1 de abril de 2026.*

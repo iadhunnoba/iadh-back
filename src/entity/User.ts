@@ -47,8 +47,8 @@ export class User {
 
     @Column({
         type: "enum",
-        enum: ["admin", "user"],
-        default: "user"
+        enum: ["admin", "profesor", "estudiante"],
+        default: "estudiante"
     })
     @IsNotEmpty()
     role: string; 

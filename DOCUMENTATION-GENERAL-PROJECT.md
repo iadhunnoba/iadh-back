@@ -221,7 +221,7 @@ src/config/config.ts
 
 ## 👤 2. Gestión de Usuarios (`/users`)
 
-**Solo Admin**
+**Solo Admin y Profesor**
 
 - `GET /users`
 - `GET /users/students`
@@ -244,7 +244,7 @@ Ruta:
 - `POST /:sessionId/end`
 - `GET /`
 
-**Acceso:** admin y user
+**Acceso:** admin, profesor y estudiante
 
 ---
 
@@ -258,7 +258,7 @@ Ruta:
 - `surname`
 - `license` (opcional)
 - `studentIdNumber` (opcional)
-- `role` (admin | user)
+- `role` (admin | profesor | estudiante)
 - `password` (hash)
 
 ---
@@ -270,6 +270,9 @@ Ruta:
 - `startedAt`
 - `endedAt`
 - `duration` (segundos)
+- `avgPulmonaryPressure`
+- `avgVentilation`
+- `avgCorrectPosition`
 - `observation`
 
 ---

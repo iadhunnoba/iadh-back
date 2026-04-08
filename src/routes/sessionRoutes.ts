@@ -6,24 +6,24 @@ import { checkRole } from "../middlewares/role";
 const router = Router();
 
 // Rutas para sesiones RCP
-// Iniciar sesión RCP (admin y usuarios pueden iniciar sesiones)
+// Iniciar sesión RCP
 router.post(
   "/students/:id/rcp-sessions/start", 
-  [checkJwt, checkRole(['admin', 'user'])], 
+  [checkJwt, checkRole(['admin', 'profesor', 'estudiante'])], 
   RcpSessionController.startSession
 );
 
 // Finalizar sesión RCP
 router.post(
   "/students/:id/rcp-sessions/:sessionId/end", 
-  [checkJwt, checkRole(['admin', 'user'])], 
+  [checkJwt, checkRole(['admin', 'profesor', 'estudiante'])], 
   RcpSessionController.endSession
 );
 
 // Obtener historial de sesiones RCP
 router.get(
   "/students/:id/rcp-sessions", 
-  [checkJwt, checkRole(['admin', 'user'])], 
+  [checkJwt, checkRole(['admin', 'profesor', 'estudiante'])], 
   RcpSessionController.getStudentSessions
 );
 

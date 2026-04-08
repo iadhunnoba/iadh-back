@@ -45,7 +45,7 @@ export class UserController {
             // Construir query
             const queryBuilder = userRepository
                 .createQueryBuilder("user")
-                .where("user.role = :role", { role: "user" })
+                .where("user.role = :role", { role: "estudiante" })
                 .select([
                     'user.id',
                     'user.username',
@@ -133,7 +133,7 @@ export class UserController {
 
         user.username = username;
         user.password = password;
-        user.role = role || 'user';
+        user.role = role || 'estudiante';
         user.name = name;
         user.surname = surname;
         user.license = license || null;

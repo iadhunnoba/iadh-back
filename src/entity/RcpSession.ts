@@ -34,6 +34,18 @@ export class RcpSession {
   @IsOptional()
   duration?: number; // Duración en minutos o segundos
 
+  @Column({ type: "float", nullable: true })
+  @IsOptional()
+  avgPulmonaryPressure?: number;
+
+  @Column({ type: "float", nullable: true })
+  @IsOptional()
+  avgVentilation?: number;
+
+  @Column({ type: "float", nullable: true })
+  @IsOptional()
+  avgCorrectPosition?: number;
+
   @Column({ type: "text", nullable: true })
   @IsOptional()
   observation?: string;

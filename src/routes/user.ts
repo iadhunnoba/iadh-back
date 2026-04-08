@@ -12,21 +12,21 @@ const router = Router();
 // [checkRole] valida el rol del usuario
 
 // Get all users
-router.get('/', [checkJwt, checkRole(['admin'])], UserController.getAll);
+router.get('/', [checkJwt, checkRole(['admin', 'profesor'])], UserController.getAll);
 
 // Get students
-router.get('/students', [checkJwt, checkRole(['admin'])], UserController.getStudents);
+router.get('/students', [checkJwt, checkRole(['admin', 'profesor'])], UserController.getStudents);
 
 // Get one user
-router.get('/:id', [checkJwt, checkRole(['admin'])], UserController.getById);
+router.get('/:id', [checkJwt, checkRole(['admin', 'profesor'])], UserController.getById);
 
 // Create new user
-router.post('/', [checkJwt, checkRole(['admin'])], UserController.new);
+router.post('/', [checkJwt, checkRole(['admin', 'profesor'])], UserController.new);
 
 // Edit user or update user
-router.patch('/:id', [checkJwt, checkRole(['admin'])], UserController.edit);
+router.patch('/:id', [checkJwt, checkRole(['admin', 'profesor'])], UserController.edit);
 
 // Delete user
-router.delete('/:id', [checkJwt, checkRole(['admin'])], UserController.delete);
+router.delete('/:id', [checkJwt, checkRole(['admin', 'profesor'])], UserController.delete);
 
 export default router;

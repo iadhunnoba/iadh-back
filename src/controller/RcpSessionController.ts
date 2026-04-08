@@ -12,11 +12,11 @@ export class RcpSessionController {
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
 
-    // Verificar si el usuario existe y es un estudiante (rol "user")
+    // Verificar si el usuario existe y es un estudiante (rol "estudiante")
     let student: User;
     try {
       student = await userRepository.findOneOrFail({
-        where: { id: String(id), role: "user" },
+        where: { id: String(id), role: "estudiante" },
       });
     } catch (error) {
       return res.status(404).json({ message: "Student not found" });
@@ -54,6 +54,7 @@ export class RcpSessionController {
   // Cierra una sesión RCP existente
   static endSession = async (req: Request, res: Response) => {
     const { id, sessionId } = req.params; // id: estudiante, sessionId: sesión RCP
+    const { avgPulmonaryPressure, avgVentilation, avgCorrectPosition, observation } = req.body;
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
 
@@ -61,7 +62,7 @@ export class RcpSessionController {
     let student: User;
     try {
       student = await userRepository.findOneOrFail({
-        where: { id: String(id), role: "user" },
+        where: { id: String(id), role: "estudiante" },
       });
     } catch (error) {
       return res.status(404).json({ message: "Student not found" });
@@ -83,9 +84,14 @@ export class RcpSessionController {
       return res.status(400).json({ message: "RCP session already ended" });
     }
 
-    // Actualizar la sesión con la fecha de finalización y calcular duración
+    // Actualizar la sesión con la fecha de finalización, calcular duración y reportes
     rcpSession.endedAt = new Date();
     rcpSession.calculateDuration();
+    
+    if (avgPulmonaryPressure !== undefined) rcpSession.avgPulmonaryPressure = avgPulmonaryPressure;
+    if (avgVentilation !== undefined) rcpSession.avgVentilation = avgVentilation;
+    if (avgCorrectPosition !== undefined) rcpSession.avgCorrectPosition = avgCorrectPosition;
+    if (observation !== undefined) rcpSession.observation = observation;
 
     // Validar la entidad actualizada
     const validationOpt = { validationError: { target: false, value: false } };
@@ -105,6 +111,10 @@ export class RcpSessionController {
           startedAt: rcpSession.startedAt,
           endedAt: rcpSession.endedAt,
           duration: rcpSession.duration,
+          avgPulmonaryPressure: rcpSession.avgPulmonaryPressure,
+          avgVentilation: rcpSession.avgVentilation,
+          avgCorrectPosition: rcpSession.avgCorrectPosition,
+          observation: rcpSession.observation
         },
       });
     } catch (error) {
@@ -126,7 +136,7 @@ export class RcpSessionController {
     let student: User;
     try {
       student = await userRepository.findOneOrFail({
-        where: { id: String(id), role: "user" },
+        where: { id: String(id), role: "estudiante" },
       });
     } catch (error) {
       return res.status(404).json({ message: "Student not found" });
@@ -151,6 +161,9 @@ export class RcpSessionController {
         "session.startedAt",
         "session.endedAt",
         "session.duration",
+        "session.avgPulmonaryPressure",
+        "session.avgVentilation",
+        "session.avgCorrectPosition",
         "session.observation",
         "session.createdAt",
         "student.id",
