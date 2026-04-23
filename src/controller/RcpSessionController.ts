@@ -9,6 +9,8 @@ export class RcpSessionController {
   // Inicia una nueva sesión RCP para un estudiante
   static startSession = async (req: Request, res: Response) => {
     const { id } = req.params; // ID del estudiante
+    const { startedAt } = req.body; // <-- Leemos si el front nos manda una fecha específica
+
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
 
@@ -25,7 +27,10 @@ export class RcpSessionController {
     // Crear una nueva sesión RCP
     const rcpSession = new RcpSession();
     rcpSession.student = student;
-    rcpSession.startedAt = new Date();
+
+    // FIX: Si el front mandó una fecha de inicio (ej. el profesor guardando tarde), la usamos.
+    // Si no, usamos la fecha y hora actual.
+    rcpSession.startedAt = startedAt ? new Date(startedAt) : new Date();
 
     // Validar la entidad
     const validationOpt = { validationError: { target: false, value: false } };
@@ -53,8 +58,18 @@ export class RcpSessionController {
   // POST /students/:id/rcp-sessions/:sessionId/end
   // Cierra una sesión RCP existente
   static endSession = async (req: Request, res: Response) => {
-    const { id, sessionId } = req.params; // id: estudiante, sessionId: sesión RCP
-    const { avgPulmonaryPressure, avgVentilation, avgCorrectPosition, observation } = req.body;
+    const { id, sessionId } = req.params;
+
+    // <-- Agregamos endedAt y duration para leerlos del Frontend
+    const {
+      avgPulmonaryPressure,
+      avgVentilation,
+      avgCorrectPosition,
+      observation,
+      endedAt,
+      duration,
+    } = req.body;
+
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
 
@@ -84,17 +99,29 @@ export class RcpSessionController {
       return res.status(400).json({ message: "RCP session already ended" });
     }
 
-    // Actualizar la sesión con la fecha de finalización, calcular duración y reportes
-    rcpSession.endedAt = new Date();
-    rcpSession.calculateDuration();
-    
-    if (avgPulmonaryPressure !== undefined) rcpSession.avgPulmonaryPressure = avgPulmonaryPressure;
-    if (avgVentilation !== undefined) rcpSession.avgVentilation = avgVentilation;
-    if (avgCorrectPosition !== undefined) rcpSession.avgCorrectPosition = avgCorrectPosition;
+    // FIX: Actualizar la sesión con la fecha de finalización que manda el frontend (si existe)
+    rcpSession.endedAt = endedAt ? new Date(endedAt) : new Date();
+
+    // FIX: Si el frontend calculó la duración real, la usamos. Si no, dejamos que la entidad lo calcule.
+    if (duration !== undefined) {
+      rcpSession.duration = duration;
+    } else {
+      rcpSession.calculateDuration();
+    }
+
+    if (avgPulmonaryPressure !== undefined)
+      rcpSession.avgPulmonaryPressure = avgPulmonaryPressure;
+    if (avgVentilation !== undefined)
+      rcpSession.avgVentilation = avgVentilation;
+    if (avgCorrectPosition !== undefined)
+      rcpSession.avgCorrectPosition = avgCorrectPosition;
     if (observation !== undefined) rcpSession.observation = observation;
 
     // Validar la entidad actualizada
-    const validationOpt = { validationError: { target: false, value: false } };
+    const validationOpt = {
+      validationError: { target: false, value: false },
+      skipMissingProperties: true,
+    };
     const errors = await validate(rcpSession, validationOpt);
     if (errors.length > 0) {
       return res.status(400).json(errors);
@@ -114,7 +141,7 @@ export class RcpSessionController {
           avgPulmonaryPressure: rcpSession.avgPulmonaryPressure,
           avgVentilation: rcpSession.avgVentilation,
           avgCorrectPosition: rcpSession.avgCorrectPosition,
-          observation: rcpSession.observation
+          observation: rcpSession.observation,
         },
       });
     } catch (error) {
@@ -122,12 +149,17 @@ export class RcpSessionController {
     }
   };
 
-
   // GET /students/:id/rcp-sessions
   // Retrieves the history of RCP sessions for a specific student with pagination and optional filters
   static getStudentSessions = async (req: Request, res: Response) => {
     const { id } = req.params; // Student ID
-    const { page = '1', limit = '10', startDate, endDate, isCompleted } = req.query;
+    const {
+      page = "1",
+      limit = "10",
+      startDate,
+      endDate,
+      isCompleted,
+    } = req.query;
 
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
@@ -147,8 +179,15 @@ export class RcpSessionController {
     const limitNumber = parseInt(limit as string);
     const skip = (pageNumber - 1) * limitNumber;
 
-    if (isNaN(pageNumber) || isNaN(limitNumber) || pageNumber < 1 || limitNumber < 1) {
-      return res.status(400).json({ message: "Invalid page or limit parameters" });
+    if (
+      isNaN(pageNumber) ||
+      isNaN(limitNumber) ||
+      pageNumber < 1 ||
+      limitNumber < 1
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid page or limit parameters" });
     }
 
     // Build query
@@ -179,7 +218,9 @@ export class RcpSessionController {
         if (isNaN(start.getTime())) {
           return res.status(400).json({ message: "Invalid startDate format" });
         }
-        queryBuilder.andWhere("session.startedAt >= :startDate", { startDate: start });
+        queryBuilder.andWhere("session.startedAt >= :startDate", {
+          startDate: start,
+        });
       } catch (error) {
         return res.status(400).json({ message: "Invalid startDate format" });
       }
@@ -191,7 +232,9 @@ export class RcpSessionController {
         if (isNaN(end.getTime())) {
           return res.status(400).json({ message: "Invalid endDate format" });
         }
-        queryBuilder.andWhere("session.startedAt <= :endDate", { endDate: end });
+        queryBuilder.andWhere("session.startedAt <= :endDate", {
+          endDate: end,
+        });
       } catch (error) {
         return res.status(400).json({ message: "Invalid endDate format" });
       }
@@ -200,7 +243,9 @@ export class RcpSessionController {
     if (isCompleted !== undefined) {
       const isCompletedBool = isCompleted === "true";
       queryBuilder.andWhere(
-        isCompletedBool ? "session.endedAt IS NOT NULL" : "session.endedAt IS NULL"
+        isCompletedBool
+          ? "session.endedAt IS NOT NULL"
+          : "session.endedAt IS NULL",
       );
     }
 
@@ -233,9 +278,7 @@ export class RcpSessionController {
       console.error("Error in getStudentSessions:", error);
       return res.status(500).json({ message: "Something went wrong!" });
     }
-
-    };
-
+  };
 }
 
 export default RcpSessionController;
