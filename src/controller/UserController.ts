@@ -1,225 +1,272 @@
-import { AppDataSource } from "../data-source"
-import { Request, Response } from "express"
-import { User } from "../entity/User"
-import { validate } from "class-validator"
-import e = require("express")
+import { AppDataSource } from "../data-source";
+import { Request, Response } from "express";
+import { User } from "../entity/User";
+import { RcpSession } from "../entity/RcpSession"; // <-- Agregamos esta importación
+import { validate } from "class-validator";
 
 export class UserController {
-    static getAll = async (req: Request, res: Response) => {
-        const userRepository = AppDataSource.getRepository(User);
-        let users: User[];
+  static getAll = async (req: Request, res: Response) => {
+    const userRepository = AppDataSource.getRepository(User);
+    let users: User[];
 
-        try {
-            users = await userRepository.find();
-        } catch (error) {
-            return res.status(404).json({ message: 'Something goes wrong!' });
-        }
-
-        if (users.length > 0) {
-            res.send(users);
-        } else {
-            res.status(404).json({ message: 'Not result' });
-        }
+    try {
+      users = await userRepository.find();
+    } catch (error) {
+      return res.status(404).json({ message: "Something goes wrong!" });
     }
 
-    static getStudents = async (req: Request, res: Response) => {
-        const userRepository = AppDataSource.getRepository(User);
+    if (users.length > 0) {
+      res.send(users);
+    } else {
+      res.status(404).json({ message: "Not result" });
+    }
+  };
 
-        try {
-            // Obtener parámetros de query
-            const { 
-                search, 
-                name, 
-                surname, 
-                email, 
-                studentIdNumber,
-                page = '1', 
-                limit = '10' 
-            } = req.query;
+  static getStudents = async (req: Request, res: Response) => {
+    const userRepository = AppDataSource.getRepository(User);
 
-            // Convertir a números
-            const pageNumber = parseInt(page as string);
-            const limitNumber = parseInt(limit as string);
-            const skip = (pageNumber - 1) * limitNumber;
+    try {
+      // Obtener parámetros de query
+      const {
+        search,
+        name,
+        surname,
+        email,
+        studentIdNumber,
+        page = "1",
+        limit = "10",
+      } = req.query;
 
-            // Construir query
-            const queryBuilder = userRepository
-                .createQueryBuilder("user")
-                .where("user.role = :role", { role: "estudiante" })
-                .select([
-                    'user.id',
-                    'user.username',
-                    'user.name',
-                    'user.surname',
-                    'user.studentIdNumber',
-                    'user.license',
-                    'user.createdAt',
-                    'user.updatedAt'
-                ]);
+      // Convertir a números
+      const pageNumber = parseInt(page as string);
+      const limitNumber = parseInt(limit as string);
+      const skip = (pageNumber - 1) * limitNumber;
 
-            // Aplicar filtros
-            if (search) {
-                queryBuilder.andWhere(
-                    "(user.name LIKE :search OR user.surname LIKE :search OR user.username LIKE :search OR user.studentIdNumber LIKE :search)",
-                    { search: `%${search}%` }
-                );
-            }
+      // Construir query
+      const queryBuilder = userRepository
+        .createQueryBuilder("user")
+        .where("user.role = :role", { role: "estudiante" })
+        .select([
+          "user.id",
+          "user.username",
+          "user.name",
+          "user.surname",
+          "user.studentIdNumber",
+          "user.license",
+          "user.createdAt",
+          "user.updatedAt",
+        ]);
 
-            if (name) {
-                queryBuilder.andWhere("user.name LIKE :name", { name: `%${name}%` });
-            }
+      // Aplicar filtros
+      if (search) {
+        queryBuilder.andWhere(
+          "(user.name LIKE :search OR user.surname LIKE :search OR user.username LIKE :search OR user.studentIdNumber LIKE :search)",
+          { search: `%${search}%` },
+        );
+      }
 
-            if (surname) {
-                queryBuilder.andWhere("user.surname LIKE :surname", { surname: `%${surname}%` });
-            }
+      if (name) {
+        queryBuilder.andWhere("user.name LIKE :name", { name: `%${name}%` });
+      }
 
-            if (email) {
-                queryBuilder.andWhere("user.username LIKE :email", { email: `%${email}%` });
-            }
+      if (surname) {
+        queryBuilder.andWhere("user.surname LIKE :surname", {
+          surname: `%${surname}%`,
+        });
+      }
 
-            if (studentIdNumber) {
-                queryBuilder.andWhere("user.studentIdNumber LIKE :studentIdNumber", { 
-                    studentIdNumber: `%${studentIdNumber}%` 
-                });
-            }
+      if (email) {
+        queryBuilder.andWhere("user.username LIKE :email", {
+          email: `%${email}%`,
+        });
+      }
 
-            // Obtener total antes de aplicar paginación
-            const total = await queryBuilder.getCount();
+      if (studentIdNumber) {
+        queryBuilder.andWhere("user.studentIdNumber LIKE :studentIdNumber", {
+          studentIdNumber: `%${studentIdNumber}%`,
+        });
+      }
 
-            // Aplicar paginación
-            const students = await queryBuilder
-                .skip(skip)
-                .take(limitNumber)
-                .orderBy('user.surname', 'ASC')
-                .addOrderBy('user.name', 'ASC')
-                .getMany();
+      // Obtener total antes de aplicar paginación
+      const total = await queryBuilder.getCount();
 
-            // Calcular información de paginación
-            const totalPages = Math.ceil(total / limitNumber);
+      // Aplicar paginación
+      const students = await queryBuilder
+        .skip(skip)
+        .take(limitNumber)
+        .orderBy("user.surname", "ASC")
+        .addOrderBy("user.name", "ASC")
+        .getMany();
 
-            return res.json({
-                data: students,
-                pagination: {
-                    total,
-                    page: pageNumber,
-                    limit: limitNumber,
-                    totalPages,
-                    hasNextPage: pageNumber < totalPages,
-                    hasPreviousPage: pageNumber > 1
-                }
-            });
+      // Calcular información de paginación
+      const totalPages = Math.ceil(total / limitNumber);
 
-        } catch (error) {
-            console.error('Error in getStudents:', error);
-            return res.status(500).json({ message: "Something went wrong!" });
-        }
+      return res.json({
+        data: students,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages,
+          hasNextPage: pageNumber < totalPages,
+          hasPreviousPage: pageNumber > 1,
+        },
+      });
+    } catch (error) {
+      console.error("Error in getStudents:", error);
+      return res.status(500).json({ message: "Something went wrong!" });
+    }
+  };
+
+  static getById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userRepository = AppDataSource.getRepository(User);
+
+    try {
+      const user = await userRepository.findOneOrFail({ where: { id } });
+      res.send(user);
+    } catch (error) {
+      res.status(404).json({ message: "Not result" });
+    }
+  };
+
+  static new = async (req: Request, res: Response) => {
+    const {
+      username,
+      password,
+      role,
+      name,
+      surname,
+      license,
+      studentIdNumber,
+      subject,
+      section,
+    } = req.body;
+    const user = new User();
+
+    user.username = username;
+    user.password = password;
+    user.role = role || "estudiante";
+    user.name = name;
+    user.surname = surname;
+    user.license = license || null;
+    user.studentIdNumber = studentIdNumber || null;
+    user.subject = subject || null;
+    user.section = section || null;
+
+    const validationOpt = { validationError: { target: false, value: false } };
+    const errors = await validate(user, validationOpt);
+
+    if (errors.length > 0) {
+      return res.status(400).json(errors);
     }
 
-    static getById = async (req: Request, res: Response) => {
-        const { id } = req.params;
-        const userRepository = AppDataSource.getRepository(User);
+    const userRepository = AppDataSource.getRepository(User);
+    try {
+      user.hashPassword();
+      await userRepository.save(user);
 
-        try {
-            const user = await userRepository.findOneOrFail({ where: { id } });
-            res.send(user);
-        } catch (error) {
-            res.status(404).json({ message: 'Not result' });
-        }
+      // Devolver el usuario creado sin la contraseña
+      const { password: _, ...userWithoutPassword } = user;
+      return res.status(201).json({
+        message: "User created successfully",
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      return res.status(409).json({
+        message: "Error create user. Username might already exist.",
+        error,
+      });
+    }
+  };
+  static edit = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { username, role, name, surname, license, studentIdNumber } =
+      req.body;
+
+    let user: User;
+    const userRepository = AppDataSource.getRepository(User);
+
+    try {
+      // FIX: Añadimos un queryBuilder o usamos 'select' para traer explícitamente el password
+      // y que class-validator no lance error de "password empty".
+      user = await userRepository.findOneOrFail({
+        where: { id },
+        // Incluimos todas las columnas necesarias + el password
+        select: [
+          "id",
+          "username",
+          "password",
+          "role",
+          "name",
+          "surname",
+          "license",
+          "studentIdNumber",
+          "subject",
+          "section",
+          "createdAt",
+          "updatedAt",
+        ],
+      });
+
+      user.username = username;
+      user.role = role;
+      if (name) user.name = name;
+      if (surname) user.surname = surname;
+      if (license !== undefined) user.license = license;
+      if (studentIdNumber !== undefined) user.studentIdNumber = studentIdNumber;
+    } catch (error) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    static new = async (req: Request, res: Response) => {
-        const { username, password, role, name, surname, license, studentIdNumber, subject, section } = req.body;
-        const user = new User();
+    // FIX alternativo/complementario: skipMissingProperties evita que valide campos que vengan undefined
+    const validationOpt = {
+      validationError: { target: false, value: false },
+      skipMissingProperties: true,
+    };
+    const errors = await validate(user, validationOpt);
 
-        user.username = username;
-        user.password = password;
-        user.role = role || 'estudiante';
-        user.name = name;
-        user.surname = surname;
-        user.license = license || null;
-        user.studentIdNumber = studentIdNumber || null;
-        user.subject = subject || null;
-        user.section = section || null;
-
-        const validationOpt = { validationError: { target: false, value: false } };
-        const errors = await validate(user, validationOpt);
-
-        if (errors.length > 0) {
-            return res.status(400).json(errors)
-        }
-
-        const userRepository = AppDataSource.getRepository(User);
-        try {
-            user.hashPassword();
-            await userRepository.save(user);
-            
-            // Devolver el usuario creado sin la contraseña
-            const { password: _, ...userWithoutPassword } = user;
-            return res.status(201).json({ 
-                message: 'User created successfully',
-                user: userWithoutPassword 
-            });
-        } catch (error) {
-            console.error('Error creating user:', error);
-            return res.status(409).json({ message: 'Error create user. Username might already exist.', error });
-        }
+    if (errors.length > 0) {
+      return res.status(400).json(errors);
     }
 
-    static edit = async (req: Request, res: Response) => {
-        const { id } = req.params;
-        const { username, role, name, surname, license, studentIdNumber } = req.body;
-
-        let user: User;
-
-        const userRepository = AppDataSource.getRepository(User);
-
-        try {
-            user = await userRepository.findOneOrFail({ where: { id } });
-            user.username = username;
-            user.role = role;
-            if (name) user.name = name;
-            if (surname) user.surname = surname;
-            if (license !== undefined) user.license = license;
-            if (studentIdNumber !== undefined) user.studentIdNumber = studentIdNumber;
-        } catch (error) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        const validationOpt = { validationError: { target: false, value: false } };
-        const errors = await validate(user, validationOpt);
-
-        if (errors.length > 0) {
-            return res.status(400).json(errors)
-        }
-
-        try {
-            await userRepository.save(user);
-        } catch (error) {
-            return res.status(409).json({ message: 'Username already in use' });
-        }
-
-        res.status(201).json({ message: 'User update' });
+    try {
+      await userRepository.save(user);
+    } catch (error) {
+      return res.status(409).json({ message: "Username already in use" });
     }
 
-    static delete = async (req: Request, res: Response) => {
-        const { id } = req.params;
-        const userRepository = AppDataSource.getRepository(User);
+    res.status(201).json({ message: "User update" });
+  };
+  static delete = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userRepository = AppDataSource.getRepository(User);
+    const rcpSessionRepository = AppDataSource.getRepository(RcpSession); // Repositorio de sesiones
 
-        let user: User;
+    let user: User;
 
-        try {
-            user = await userRepository.findOneOrFail({ where: { id } });
-        } catch (error) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        
-        try {
-            await userRepository.delete(id);
-            res.status(201).json({ message: 'User deleted' });
-        } catch (error) {
-            return res.status(500).json({ message: 'Error deleting user, the user may have a CPR session.' });
-        }
+    try {
+      user = await userRepository.findOneOrFail({ where: { id } });
+    } catch (error) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    try {
+      // 1. Primero eliminamos todas las sesiones RCP asociadas a este estudiante
+      await rcpSessionRepository.delete({ student: { id: user.id } });
+
+      // 2. Ahora que no hay conflictos de llave foránea, eliminamos al estudiante
+      await userRepository.delete(id);
+
+      res.status(201).json({ message: "User and their RCP sessions deleted" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return res.status(500).json({
+        message: "Error deleting user and their sessions.",
+      });
+    }
+  };
 }
 
 export default UserController;
