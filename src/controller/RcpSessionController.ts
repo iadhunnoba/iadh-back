@@ -1,20 +1,19 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { RcpSession } from "../entity/RcpSession";
+import { SessionEvent } from "../entity/SessionEvent";
 import { User } from "../entity/User";
 import { validate } from "class-validator";
 
 export class RcpSessionController {
   // POST /students/:id/rcp-sessions/start
-  // Inicia una nueva sesión RCP para un estudiante
   static startSession = async (req: Request, res: Response) => {
-    const { id } = req.params; // ID del estudiante
-    const { startedAt } = req.body; // <-- Leemos si el front nos manda una fecha específica
+    const { id } = req.params;
+    const { startedAt } = req.body;
 
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
 
-    // Verificar si el usuario existe y es un estudiante (rol "estudiante")
     let student: User;
     try {
       student = await userRepository.findOneOrFail({
@@ -24,22 +23,16 @@ export class RcpSessionController {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Crear una nueva sesión RCP
     const rcpSession = new RcpSession();
     rcpSession.student = student;
-
-    // FIX: Si el front mandó una fecha de inicio (ej. el profesor guardando tarde), la usamos.
-    // Si no, usamos la fecha y hora actual.
     rcpSession.startedAt = startedAt ? new Date(startedAt) : new Date();
 
-    // Validar la entidad
     const validationOpt = { validationError: { target: false, value: false } };
     const errors = await validate(rcpSession, validationOpt);
     if (errors.length > 0) {
       return res.status(400).json(errors);
     }
 
-    // Guardar la sesión
     try {
       await rcpSessionRepository.save(rcpSession);
       return res.status(201).json({
@@ -56,11 +49,8 @@ export class RcpSessionController {
   };
 
   // POST /students/:id/rcp-sessions/:sessionId/end
-  // Cierra una sesión RCP existente
   static endSession = async (req: Request, res: Response) => {
     const { id, sessionId } = req.params;
-
-    // <-- Agregamos endedAt y duration para leerlos del Frontend
     const {
       avgPulmonaryPressure,
       avgVentilation,
@@ -68,12 +58,13 @@ export class RcpSessionController {
       observation,
       endedAt,
       duration,
+      events, // Array de eventos de la sesión
     } = req.body;
 
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
+    const sessionEventRepository = AppDataSource.getRepository(SessionEvent);
 
-    // Verificar si el usuario existe y es un estudiante
     let student: User;
     try {
       student = await userRepository.findOneOrFail({
@@ -83,7 +74,6 @@ export class RcpSessionController {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Verificar si la sesión existe y pertenece al estudiante
     let rcpSession: RcpSession;
     try {
       rcpSession = await rcpSessionRepository.findOneOrFail({
@@ -94,15 +84,12 @@ export class RcpSessionController {
       return res.status(404).json({ message: "RCP session not found" });
     }
 
-    // Verificar si la sesión ya está cerrada
     if (rcpSession.endedAt) {
       return res.status(400).json({ message: "RCP session already ended" });
     }
 
-    // FIX: Actualizar la sesión con la fecha de finalización que manda el frontend (si existe)
     rcpSession.endedAt = endedAt ? new Date(endedAt) : new Date();
 
-    // FIX: Si el frontend calculó la duración real, la usamos. Si no, dejamos que la entidad lo calcule.
     if (duration !== undefined) {
       rcpSession.duration = duration;
     } else {
@@ -117,7 +104,6 @@ export class RcpSessionController {
       rcpSession.avgCorrectPosition = avgCorrectPosition;
     if (observation !== undefined) rcpSession.observation = observation;
 
-    // Validar la entidad actualizada
     const validationOpt = {
       validationError: { target: false, value: false },
       skipMissingProperties: true,
@@ -127,9 +113,23 @@ export class RcpSessionController {
       return res.status(400).json(errors);
     }
 
-    // Guardar los cambios
     try {
       await rcpSessionRepository.save(rcpSession);
+
+      // Guardar los eventos de la sesión si se enviaron
+      if (events && Array.isArray(events) && events.length > 0) {
+        const sessionEvents = events.map((evt: any) => {
+          const sessionEvent = new SessionEvent();
+          sessionEvent.session = rcpSession;
+          sessionEvent.eventType = evt.eventType || "UNKNOWN";
+          sessionEvent.eventData = evt.eventData || null;
+          sessionEvent.observation = evt.observation || null;
+          sessionEvent.sessionTimeSeconds = evt.sessionTimeSeconds || 0;
+          return sessionEvent;
+        });
+        await sessionEventRepository.save(sessionEvents);
+      }
+
       return res.status(200).json({
         message: "RCP session ended",
         session: {
@@ -149,10 +149,100 @@ export class RcpSessionController {
     }
   };
 
+  // PATCH /students/:id/rcp-sessions/:sessionId
+  // Permite al docente editar la observación general y las observaciones por evento
+  static updateSessionObservations = async (req: Request, res: Response) => {
+    const { id, sessionId } = req.params;
+    const { observation, events } = req.body;
+
+    const userRepository = AppDataSource.getRepository(User);
+    const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
+    const sessionEventRepository = AppDataSource.getRepository(SessionEvent);
+
+    let student: User;
+    try {
+      student = await userRepository.findOneOrFail({
+        where: { id: String(id), role: "estudiante" },
+      });
+    } catch {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    let rcpSession: RcpSession;
+    try {
+      rcpSession = await rcpSessionRepository.findOneOrFail({
+        where: { id: Number(sessionId), student: { id: String(id) } },
+        relations: ["student"],
+      });
+    } catch {
+      return res.status(404).json({ message: "RCP session not found" });
+    }
+
+    if (observation !== undefined) {
+      rcpSession.observation = observation;
+    }
+
+    try {
+      await rcpSessionRepository.save(rcpSession);
+
+      // Actualizar observaciones por evento
+      if (events && Array.isArray(events) && events.length > 0) {
+        for (const evtUpdate of events) {
+          if (evtUpdate.id !== undefined) {
+            await sessionEventRepository.update(
+              { id: evtUpdate.id, session: { id: rcpSession.id } },
+              { observation: evtUpdate.observation ?? null }
+            );
+          }
+        }
+      }
+
+      return res.status(200).json({ message: "Session observations updated" });
+    } catch (error) {
+      console.error("Error in updateSessionObservations:", error);
+      return res.status(500).json({ message: "Failed to update observations" });
+    }
+  };
+
+  // GET /students/:id/rcp-sessions/:sessionId
+  static getSessionById = async (req: Request, res: Response) => {
+    const { id, sessionId } = req.params;
+
+    const userRepository = AppDataSource.getRepository(User);
+    const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
+
+    let student: User;
+    try {
+      student = await userRepository.findOneOrFail({
+        where: { id: String(id), role: "estudiante" },
+      });
+    } catch (error) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    try {
+      const session = await rcpSessionRepository
+        .createQueryBuilder("session")
+        .leftJoinAndSelect("session.events", "events")
+        .where("session.id = :sessionId", { sessionId: Number(sessionId) })
+        .andWhere("session.student = :studentId", { studentId: String(id) })
+        .orderBy("events.sessionTimeSeconds", "ASC")
+        .getOne();
+
+      if (!session) {
+        return res.status(404).json({ message: "RCP session not found" });
+      }
+
+      return res.status(200).json({ session });
+    } catch (error) {
+      console.error("Error in getSessionById:", error);
+      return res.status(500).json({ message: "Something went wrong!" });
+    }
+  };
+
   // GET /students/:id/rcp-sessions
-  // Retrieves the history of RCP sessions for a specific student with pagination and optional filters
   static getStudentSessions = async (req: Request, res: Response) => {
-    const { id } = req.params; // Student ID
+    const { id } = req.params;
     const {
       page = "1",
       limit = "10",
@@ -164,7 +254,6 @@ export class RcpSessionController {
     const userRepository = AppDataSource.getRepository(User);
     const rcpSessionRepository = AppDataSource.getRepository(RcpSession);
 
-    // Validate student existence and role
     let student: User;
     try {
       student = await userRepository.findOneOrFail({
@@ -174,7 +263,6 @@ export class RcpSessionController {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Convert query parameters
     const pageNumber = parseInt(page as string);
     const limitNumber = parseInt(limit as string);
     const skip = (pageNumber - 1) * limitNumber;
@@ -190,11 +278,10 @@ export class RcpSessionController {
         .json({ message: "Invalid page or limit parameters" });
     }
 
-    // Build query
     const queryBuilder = rcpSessionRepository
       .createQueryBuilder("session")
       .leftJoinAndSelect("session.student", "student")
-      .where("session.student = :studentId", { studentId: Number(id) })
+      .where("session.student = :studentId", { studentId: String(id) })
       .select([
         "session.id",
         "session.startedAt",
@@ -211,7 +298,6 @@ export class RcpSessionController {
         "student.surname",
       ]);
 
-    // Apply filters
     if (startDate) {
       try {
         const start = new Date(startDate as string);
@@ -245,22 +331,19 @@ export class RcpSessionController {
       queryBuilder.andWhere(
         isCompletedBool
           ? "session.endedAt IS NOT NULL"
-          : "session.endedAt IS NULL",
+          : "session.endedAt IS NULL"
       );
     }
 
     try {
-      // Get total count before pagination
       const total = await queryBuilder.getCount();
 
-      // Apply pagination and sorting
       const sessions = await queryBuilder
         .orderBy("session.startedAt", "DESC")
         .skip(skip)
         .take(limitNumber)
         .getMany();
 
-      // Calculate pagination metadata
       const totalPages = Math.ceil(total / limitNumber);
 
       return res.status(200).json({

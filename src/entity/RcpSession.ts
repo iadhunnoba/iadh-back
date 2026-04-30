@@ -3,12 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from "typeorm";
 import { IsNotEmpty, IsDate, IsOptional } from "class-validator";
 import { User } from "./User";
+import { SessionEvent } from "./SessionEvent";
 
 @Entity()
 export class RcpSession {
@@ -50,10 +51,12 @@ export class RcpSession {
   @IsOptional()
   observation?: string;
 
-  @Column()   // date of creation
+  @Column()
   @CreateDateColumn()
   createdAt: Date;
 
+  @OneToMany(() => SessionEvent, (event) => event.session, { cascade: true })
+  events: SessionEvent[];
 
   // Método para calcular la duración automáticamente
   calculateDuration(): void {

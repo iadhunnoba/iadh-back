@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "./entity/User";
 import { RcpSession } from "./entity/RcpSession";
+import { SessionEvent } from "./entity/SessionEvent";
 
 export const AppDataSource = new DataSource({
   type: "mysql",
@@ -12,7 +13,7 @@ export const AppDataSource = new DataSource({
   database: "iadh_db",
   synchronize: true,
   logging: false,
-  entities: [User, RcpSession],
+  entities: [User, RcpSession, SessionEvent],
   migrations: [],
   subscribers: [],
 });
